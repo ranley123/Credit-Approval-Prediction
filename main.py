@@ -1,11 +1,24 @@
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import KFold
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import balanced_accuracy_score
+
+def KFoldSplit(X, y):
+    kf = KFold()
+    kf.get_n_splits(X)
+
+    for train_index, test_index in kf.split(X):
+        X_train = [X[i] for i in train_index]
+        X_test = [X[i] for i in test_index]
+        y_train = [y[i] for i in train_index]
+        y_test = [y[i] for i in test_index]
+
+        yield X_train, X_test, y_train, y_test
 
 def preprocess(filename, sep=','):
     # load data
@@ -44,25 +57,45 @@ def preprocess(filename, sep=','):
     y = y.astype("str")
     y.loc[y == '+'] = '1'
     y.loc[y == '-'] = '0'
-    y = y.astype('int')
+    y = np.array(y.astype('int'))
 
+    return X, y
+
+def normal_train(X, y):
     # train_test_split
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
-    
-    return X_train, X_test, y_train, y_test
-
-def train(X_train, X_test, y_train):
     clf = LogisticRegression()
-    clf.fit(X_train,y_train)
+    clf.fit(X_train, y_train)
     y_pred = clf.predict(X_test)
-    return y_pred
+    accuracy, balanced = eval(y_test, y_pred)
+
+def KFold_train(X, y):
+    accuracies = []
+    balanced_accuracies = []
+
+    for X_train, X_test, y_train, y_test in KFoldSplit(X, y):
+        clf = LogisticRegression()
+        clf.fit(X_train,y_train)
+        y_pred = clf.predict(X_test)
+        accuracy, balanced = eval(y_test, y_pred)
+        accuracies.append(accuracy)
+        balanced_accuracies.append(balanced)
+    print('Avg Accuracy: ', round(np.mean(accuracies), 3))
+    print('Avg Balanced Accuracy: ', round(np.mean(balanced_accuracies), 3))
+
 
 def eval(y_test, y_pred):
-    print('accuracy: ', round(accuracy_score(y_test, y_pred), 3))
-    print('balanced accuracy: ', round(balanced_accuracy_score(y_test, y_pred), 3))
+    accuracy = round(accuracy_score(y_test, y_pred), 3)
+    balanced_accu = round(balanced_accuracy_score(y_test, y_pred), 3)
+    
+    print('accuracy: ', accuracy)
+    print('balanced accuracy: ', balanced_accu)
 
-X_train, X_test, y_train, y_test = preprocess("data/crx.data")
-y_pred = train(X_train, X_test, y_train)
+    return accuracy, balanced_accu
 
-eval(y_test, y_pred)
+
+if __name__ == "__main__":
+    X, y = preprocess("data/crx.data")
+    normal_train(X, y)
+
 
