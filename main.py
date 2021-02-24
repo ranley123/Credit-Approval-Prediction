@@ -7,6 +7,9 @@ from sklearn.utils import shuffle
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import balanced_accuracy_score
+import seaborn as sns
+import matplotlib.pyplot as plt
+
 
 def KFoldSplit(X, y):
     kf = KFold()
@@ -49,6 +52,13 @@ def preprocess(filename, sep=','):
         one_hot.columns = names
         X = X.join(one_hot)
     
+    # select features
+    correlation_mat = df_small.corr()
+
+    sns.heatmap(correlation_mat, annot = True)
+
+    plt.show()
+
     # normalise
     scaler = StandardScaler()
     X = scaler.fit_transform(X)
@@ -64,7 +74,16 @@ def preprocess(filename, sep=','):
 def normal_train(X, y):
     # train_test_split
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
-    clf = LogisticRegression()
+    # correlation_mat = X_train.join(y_train).corr()
+    # print(correlation_mat['A16'])
+
+    # sns.heatmap(correlation_mat, annot = True)
+
+    # plt.show()
+    # A8, A11, A9, A10
+    # X_train = X_train[['A8', 'A11', 'A9_f', 'A9_t', 'A10_t', 'A10_f']]
+    # X_test = X_test[['A8', 'A11', 'A9_f', 'A9_t', 'A10_t', 'A10_f']]
+    clf = LogisticRegression(penalty='none', class_weight=None)
     clf.fit(X_train, y_train)
     y_pred = clf.predict(X_test)
     accuracy, balanced = eval(y_test, y_pred)
